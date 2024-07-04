@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  nginx:
+    container_name: nginx_inception
+    build: ./requirements/nginx
+    ports:
+      - "443:443"  # Mapper le port 443 de l'hôte au port 443 du container
+    volumes:
+      - ./data/nginx:/var/www/html  # Monter le répertoire de l'hôte dans le container
+    depends_on:
+      - wordpress
+    networks:
+      inception:
+        aliases:
+          - ibenhaim.42.fr
+    restart: on-failure
+
+  mariadb:
+    container_name: mariadb_inception
+    build: ./requirements/mariadb
+    volumes:
+      - mariadb_data:/var/lib/mysql  # Utiliser un volume nommé pour persister les données de la DB
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"  # Mapper le port 3306 de l'hôte au port 3306 du container
+    networks:
+      inception:
+        aliases:
+          - mariadb
+          - ibenhaim.42.fr
+    restart: on-failure
+
+  wordpress:
+    container_name: wordpress_inception
+    build: ./requirements/wordpress
+    volumes:
+      - wordpress_data:/var/www/html  # Utiliser un volume nommé pour persister les fichiers de WordPress
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+    depends_on:
+      - mariadb
+    networks:
+      inception:
+        aliases:
+          - ibenhaim.42.fr
+    expose:
+      - "9000"  # Exposer le port 9000 du container
+    restart: on-failure
+
+volumes:
+  mariadb_data:
+  wordpress_data:
+
+networks:
+  inception:
+    driver: bridge
