@@ -1,17 +1,20 @@
-FROM wordpress:latest
+FROM debian:bullseye
 
-# Installer les utilitaires nécessaires
-RUN apt-get update && apt-get install -y vim
+RUN apt-get update  \
+    && apt-get install -y php-fpm  \
+    && apt-get install -y php-mysql  \
+    && apt-get install curl -y  \
+    && apt-get clean  \
+    && rm -rf /var/lib/apt/lists/*
 
-# Modifier la configuration d'Apache pour écouter sur le port 9000
-RUN sed -i 's/Listen 80/Listen 9000/' /etc/apache2/ports.conf
-RUN sed -i 's/:80/:9000/' /etc/apache2/sites-available/000-default.conf
+RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 
-# Ajouter ServerName à la configuration principale d'Apache
-RUN echo "ServerName ibenhaim.42.fr" >> /etc/apache2/apache2.conf
+RUN chmod +x wp-cli.phar
 
-# Exposer le port 9000
-EXPOSE 9000
+RUN mv wp-cli.phar /usr/local/bin/wp-cli.phar
 
-# Démarrer Apache
-CMD ["apache2-foreground"]
+COPY conf/www.conf /etc/php/7.4/fpm/pool.d/
+
+COPY ./tools/install.sh ./etc
+
+ENTRYPOINT [ "sh", "/etc/install.sh" ]

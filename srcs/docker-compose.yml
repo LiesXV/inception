@@ -1,64 +1,78 @@
-version: '3.8'
-
 services:
-  nginx:
-    container_name: nginx_inception
-    build: ./requirements/nginx
-    ports:
-      - "443:443"  # Mapper le port 443 de l'hôte au port 443 du container
-    volumes:
-      - ./data/nginx:/var/www/html  # Monter le répertoire de l'hôte dans le container
-    depends_on:
-      - wordpress
-    networks:
-      inception:
-        aliases:
-          - ibenhaim.42.fr
-    restart: on-failure
-
   mariadb:
-    container_name: mariadb_inception
-    build: ./requirements/mariadb
+    container_name: mariadb
+    env_file:
+      - .env
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+      args:
+        - DATABASE_ROOT_PASSWORD
+        - WORDPRESS_DATABASE
+        - WORDPRESS_DATABASE_USER
+        - WORDPRESS_DATABASE_USER_PASSWORD
+    image: mariadb
     volumes:
-      - mariadb_data:/var/lib/mysql  # Utiliser un volume nommé pour persister les données de la DB
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3306:3306"  # Mapper le port 3306 de l'hôte au port 3306 du container
+      - mariadb:/var/lib/mysql
     networks:
-      inception:
-        aliases:
-          - mariadb
-          - ibenhaim.42.fr
-    restart: on-failure
+      - inception
+    restart: unless-stopped
+    expose:
+      - "3306"
 
   wordpress:
-    container_name: wordpress_inception
-    build: ./requirements/wordpress
-    volumes:
-      - wordpress_data:/var/www/html  # Utiliser un volume nommé pour persister les fichiers de WordPress
-    environment:
-      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
-      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+    container_name: wordpress
     depends_on:
       - mariadb
+    env_file:
+      - .env
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    image: wordpress
+    volumes:
+      - wordpress:/var/www
     networks:
-      inception:
-        aliases:
-          - ibenhaim.42.fr
+      - inception
+    restart: always
     expose:
-      - "9000"  # Exposer le port 9000 du container
+      - "9000"
+
+  nginx:
+    container_name: nginx
+    depends_on:
+      - wordpress
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    image: nginx
+    volumes:
+      - wordpress:/var/www
+    networks:
+      - inception
+    ports:
+      - "443:443"
+    expose:
+      - "443"
     restart: on-failure
 
 volumes:
-  mariadb_data:
-  wordpress_data:
+  wordpress:
+    name: wordpress
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/liesxv/data/wordpress
+  mariadb:
+    name: mariadb
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/liesxv/data/mariadb
 
 networks:
   inception:
+    name: inception
     driver: bridge
