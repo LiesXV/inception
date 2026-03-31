@@ -18,10 +18,10 @@ Le but est de construire un environnement complet avec plusieurs services conten
 ---
 
 ## 📌 Contraintes
-Chaque service doit avoir sa propre image et container.
-Respect strict des bonnes pratiques Docker (pas de root inutile, ports exposés correctement, données persistantes…).
-Le projet doit pouvoir être recréé facilement avec docker-compose up.
-Les logs doivent être consultables et clairs.
+- Chaque service doit avoir **sa propre image** et container.
+- Respect strict des bonnes pratiques Docker (pas de root inutile, ports exposés correctement, données persistantes…).
+- Le projet doit pouvoir être **recréé facilement** avec docker-compose up.
+- Les logs doivent être consultables et clairs.
 
 ---
 
